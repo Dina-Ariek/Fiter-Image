@@ -1,0 +1,62 @@
+# List all files
+import os
+import re
+import pandas as pd
+import pysolr
+import json 
+
+def jpeg_res(filename):
+
+   # open image for reading in binary mode
+   with open(filename,'rb') as img_file:
+
+    # height of image (in 2 bytes) is at 164th position
+    img_file.seek(163)
+
+       # read the 2 bytes
+    a = img_file.read(2)
+
+       # calculate height
+    height = (a[0] << 8) + a[1]
+
+       # next 2 bytes is width
+    a = img_file.read(2)
+
+       # calculate width
+    width = (a[0] << 8) + a[1]
+    
+    #input(width,height)
+    # print("The resolution of the image is",width,"x",height)
+    return '{} x {}'.format(width,height)
+
+# Connecting to solr
+solr_url = 'http://192.168.15.205:8983/solr/kotekaman_text'
+solr = pysolr.Solr(solr_url, always_commit=True)
+folder = os.getcwd()
+list_file=[]
+list_path=[]
+extension=[]
+size=[]
+for (dirpath, dirnames, filenames) in os.walk('.'):
+    for f in filenames: 
+        if os.path.splitext(f)[1][1:].strip() in ("jpg","png"):  #filter extension type
+            #list_file.append(f)
+            list_path1=(folder+(str(os.path.join(dirpath,f)))[1:])
+            #list_path.append(list_path1)
+            extension1 = os.path.splitext(f)[1][1:].strip() 
+            #extension.append(extension1)
+            size=[]
+            for p in list_path:
+                size=jpeg_res(p)
+                #size.append(jpeg_res(p))
+                #Add data to solr
+            solr.add(    [
+                        {
+                        "filename":f,
+                        "location":list_path1,
+                        "extension":extension1,
+                        "size":size
+
+
+                        }]
+            )
